@@ -183,7 +183,7 @@ header{padding:22px 0 18px;border-bottom:1px solid var(--border);margin-bottom:2
 <script>
 let posts=[],selected=new Set(),activeLabel='all',curTab='tg';
 let O={'tg-hdr':'none','wa-vpn':'yes','fb-fmt':'watch','fb-sep':'line'};
-let cdVal=300,cdTimer;
+let cdVal=300,cdTimer,jsonpTimer=null;
 
 const LM={
   'premier league':{e:'⚽',c:'#3d85c8',b:'rgba(61,133,200,.15)'},
@@ -211,73 +211,68 @@ function lm(raw){
   return{...LM.default,name:raw}
 }
 
-async function fetchPosts(){
-  setList('<div class="loading"><span class="spin"></span>Fetching posts…</div>');
+// ── JSONP: the only reliable way to hit Blogger from a static page ──────────
+function fetchPosts(){
+  // Cancel any pending JSONP timeout
+  if(jsonpTimer){clearTimeout(jsonpTimer);jsonpTimer=null;}
+
+  // Remove any leftover JSONP script tags
+  document.querySelectorAll('script[data-jsonp]').forEach(s=>s.remove());
+
+  setList('<div class="loading"><span class="spin"></span>Fetching latest posts…</div>');
+  document.getElementById('pc').textContent='Loading…';
   posts=[];
 
-  const feedUrl='https://sports803livestream.blogspot.com/feeds/posts/default?alt=json&max-results=50';
-  // Try multiple CORS proxies
-  const proxies=[
-    u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
-    u=>`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
-    u=>`https://thingproxy.freeboard.io/fetch/${u}`,
-  ];
+  // Expose callback globally before injecting the script
+  window.__bloggerCB=function(data){
+    if(jsonpTimer){clearTimeout(jsonpTimer);jsonpTimer=null;}
+    document.querySelectorAll('script[data-jsonp]').forEach(s=>s.remove());
+    parseFeed(data);
+  };
 
-  for(const mk of proxies){
-    try{
-      const r=await fetch(mk(feedUrl),{signal:AbortSignal.timeout(9000)});
-      if(!r.ok)continue;
-      const txt=await r.text();
-      let json;
-      try{json=JSON.parse(txt)}catch(e){continue}
-      const raw=json.contents?JSON.parse(json.contents):json;
-      const entries=raw?.feed?.entry||[];
-      if(!entries.length)continue;
-      posts=entries.map(e=>{
-        const title=clean(e.title.$t);
-        const url=(e.link.find(l=>l.rel==='alternate')||e.link[e.link.length-1]).href;
-        const cats=(e.category||[]).map(c=>c.term);
-        const label=cats[0]||'sport';
-        return{title,url,label};
-      });
-      break;
-    }catch(e){console.warn('Proxy failed',e)}
-  }
+  // Blogger supports ?callback= natively — no CORS proxy needed
+  const url='https://sports803livestream.blogspot.com/feeds/posts/default'
+    +'?alt=json&max-results=50&callback=__bloggerCB';
 
-  // Fallback: parse homepage HTML
-  if(!posts.length){
-    try{
-      const hp='https://sports803livestream.blogspot.com/';
-      const r=await fetch(`https://corsproxy.io/?${encodeURIComponent(hp)}`,{signal:AbortSignal.timeout(12000)});
-      const html=await r.text();
-      posts=parseHTML(html);
-    }catch(e){console.warn('HTML fallback failed',e)}
-  }
+  const s=document.createElement('script');
+  s.src=url;
+  s.dataset.jsonp='1';
+  s.onerror=function(){
+    if(jsonpTimer){clearTimeout(jsonpTimer);jsonpTimer=null;}
+    onFetchError('Script load error – check network / ad-blocker.');
+  };
+  document.head.appendChild(s);
 
-  if(!posts.length){
-    setList('<div class="err">⚠️ Could not load posts from the blog.<br><br>This is usually a CORS issue on GitHub Pages.<br>Try clicking <b>↻ Now</b> again or check your network.</div>');
-    document.getElementById('pc').textContent='Error – try again';
+  // 12-second timeout
+  jsonpTimer=setTimeout(()=>{
+    document.querySelectorAll('script[data-jsonp]').forEach(s=>s.remove());
+    onFetchError('Timed out after 12 s. Try clicking ↻ Now again.');
+  },12000);
+}
+
+function parseFeed(data){
+  const entries=(data&&data.feed&&data.feed.entry)||[];
+  if(!entries.length){
+    onFetchError('Feed returned 0 entries. The blog may be empty or private.');
     return;
   }
-
+  posts=entries.map(e=>{
+    const title=clean(e.title.$t);
+    const linkArr=e.link||[];
+    const alt=linkArr.find(l=>l.rel==='alternate');
+    const url=(alt||linkArr[linkArr.length-1]||{}).href||'';
+    const cats=(e.category||[]).map(c=>c.term);
+    const label=cats[0]||'sport';
+    return{title,url,label};
+  });
   buildLabels();renderList();
   document.getElementById('pc').textContent=posts.length+' posts loaded';
   resetCd();
 }
 
-function parseHTML(html){
-  const doc=new DOMParser().parseFromString(html,'text/html');
-  const res=[];
-  doc.querySelectorAll('h3 a, .post-title a').forEach(a=>{
-    const title=clean(a.textContent.trim());
-    const url=a.href||a.getAttribute('href')||'';
-    if(!title||!url.includes('blogspot'))return;
-    const art=a.closest('article,.post,.item-post,.post-item');
-    let label='sport';
-    if(art){const l=art.querySelector('.label a,.post-label a');if(l)label=l.textContent.trim()}
-    res.push({title,url,label});
-  });
-  return res;
+function onFetchError(msg){
+  setList(`<div class="err">⚠️ ${msg}<br><br>Click <b>↻ Now</b> to retry.</div>`);
+  document.getElementById('pc').textContent='Error – retry';
 }
 
 function clean(s){
