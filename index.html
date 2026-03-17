@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sports803 Post Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --card: #161d2e;
+    --border: #1e2d45;
+    --accent: #00d4ff;
+    --green: #00ff88;
+    --orange: #ff6b2b;
+    --red: #ff3b5c;
+    --text: #e8f0fe;
+    --muted: #6b7fa3;
+    --telegram: #29b6f6;
+    --whatsapp: #25d366;
+    --facebook: #1877f2;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 20% 20%, rgba(0,212,255,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(0,255,136,0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 28px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .header-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .logo span { color: var(--orange); -webkit-text-fill-color: var(--orange); }
+  .status-bar { display: flex; align-items: center; gap: 10px; font-size: 0.78rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,255,136,0.4)} 50%{opacity:0.7;box-shadow:0 0 0 6px rgba(0,255,136,0)} }
+  #countdown { color: var(--accent); font-weight: 600; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 6px; margin-bottom: 24px; background: var(--surface); padding: 6px; border-radius: 14px; border: 1px solid var(--border); width: fit-content; }
+  .tab {
+    padding: 9px 20px; border-radius: 10px; border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
+    background: transparent; color: var(--muted); transition: all 0.2s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .tab:hover { color: var(--text); background: var(--border); }
+  .tab.active { color: #000; }
+  .tab.tg.active { background: var(--telegram); }
+  .tab.wa.active { background: var(--whatsapp); }
+  .tab.fb.active { background: var(--facebook); }
+
+  /* ── LAYOUT ── */
+  .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media(max-width: 768px) { .layout { grid-template-columns: 1fr; } }
+
+  /* ── PANEL ── */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 14px 18px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-header .badge {
+    background: var(--accent);
+    color: #000;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .panel-body { padding: 14px; max-height: 480px; overflow-y: auto; }
+  .panel-body::-webkit-scrollbar { width: 4px; }
+  .panel-body::-webkit-scrollbar-track { background: transparent; }
+  .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── POST ITEMS ── */
+  .post-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px; border-radius: 10px; margin-bottom: 6px;
+    border: 1px solid transparent; cursor: pointer;
+    transition: all 0.15s; background: var(--surface);
+  }
+  .post-item:hover { border-color: var(--border); background: #1a2236; }
+  .post-item.selected { border-color: var(--accent); background: rgba(0,212,255,0.06); }
+  .post-item input[type=checkbox] { 
+    accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; cursor: pointer; 
+  }
+  .post-meta { flex: 1; min-width: 0; }
+  .post-title { font-size: 0.85rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .post-sport { font-size: 0.72rem; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; }
+  .sport-tag {
+    padding: 1px 7px; border-radius: 20px; font-weight: 700; font-size: 0.65rem;
+    background: rgba(0,212,255,0.12); color: var(--accent);
+  }
+  .sport-tag.basketball { background: rgba(255,107,43,0.12); color: var(--orange); }
+  .loading-item { padding: 12px; text-align: center; color: var(--muted); font-size: 0.82rem; }
+
+  .select-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+  .btn-sm {
+    padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-size: 0.75rem;
+    font-family: 'DM Sans', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── OPTIONS PANEL ── */
+  .options-panel { padding: 0 14px 14px; }
+  .opt-group { margin-bottom: 14px; }
+  .opt-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .opt-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .opt-btn {
+    padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--muted); font-size: 0.8rem;
+    font-family: 'DM Sans', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  .opt-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .opt-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.08); }
+  .opt-btn.tg-active { border-color: var(--telegram); color: var(--telegram); background: rgba(41,182,246,0.08); }
+  .opt-btn.wa-active { border-color: var(--whatsapp); color: var(--whatsapp); background: rgba(37,211,102,0.08); }
+  .opt-btn.fb-active { border-color: var(--facebook); color: var(--facebook); background: rgba(24,119,242,0.08); }
+
+  .text-input {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 9px 12px; color: var(--text); font-size: 0.83rem;
+    font-family: 'DM Sans', sans-serif; outline: none; transition: border 0.15s;
+  }
+  .text-input:focus { border-color: var(--accent); }
+  .text-input::placeholder { color: var(--muted); }
+
+  /* ── OUTPUT ── */
+  .output-box {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px; color: var(--text); font-size: 0.82rem;
+    font-family: 'JetBrains Mono', monospace; line-height: 1.7; resize: vertical;
+    min-height: 280px; outline: none;
+  }
+  .output-box:focus { border-color: var(--accent); }
+
+  .action-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .btn-main {
+    flex: 1; padding: 12px 18px; border-radius: 10px; border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.2s; min-width: 120px;
+  }
+  .btn-generate { background: linear-gradient(135deg, var(--accent), #0099cc); color: #000; }
+  .btn-generate:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,212,255,0.3); }
+  .btn-copy { background: var(--surface); border: 1px solid var(--border); color: var(--text); flex: 0; }
+  .btn-copy:hover { border-color: var(--green); color: var(--green); }
+  .btn-copy.copied { border-color: var(--green); color: var(--green); background: rgba(0,255,136,0.08); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .info-banner {
+    background: rgba(0,212,255,0.06);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .char-count { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-top: 5px; text-align: right; }
+
+  .spinner {
+    display: inline-block; width: 12px; height: 12px;
+    border: 2px solid rgba(255,255,255,0.2); border-top-color: currentColor;
+    border-radius: 50%; animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  
+  .error-msg { color: var(--red); font-size: 0.78rem; margin-top: 6px; display: none; }
+
+  .right-col { display: flex; flex-direction: column; gap: 16px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="header-inner">
+      <div class="logo">Sports<span>803</span> Post Generator</div>
+      <div class="status-bar">
+        <div class="pulse"></div>
+        <span id="post-count">Loading posts…</span>
+        &nbsp;·&nbsp; Refresh in <span id="countdown">5:00</span>
+        <button class="btn-sm" onclick="fetchPosts()" style="margin-left:6px">↻ Now</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab tg active" onclick="switchTab('telegram',this)">✈️ Telegram</button>
+    <button class="tab wa" onclick="switchTab('whatsapp',this)">💬 WhatsApp</button>
+    <button class="tab fb" onclick="switchTab('facebook',this)">📘 Facebook</button>
+  </div>
+
+  <div class="layout">
+
+    <!-- LEFT: Post Picker -->
+    <div>
+      <div class="panel">
+        <div class="panel-header">
+          Select Matches
+          <span class="badge" id="sel-count">0 selected</span>
+        </div>
+        <div class="panel-body">
+          <div class="select-bar">
+            <button class="btn-sm" onclick="selectAll()">Select All</button>
+            <button class="btn-sm" onclick="clearAll()">Clear</button>
+            <button class="btn-sm" onclick="selectSport('football')">⚽ Football</button>
+            <button class="btn-sm" onclick="selectSport('basketball')">🏀 Basketball</button>
+          </div>
+          <div id="posts-list"><div class="loading-item"><span class="spinner"></span> Fetching latest posts…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Options + Output -->
+    <div class="right-col">
+
+      <!-- Telegram Options -->
+      <div id="tab-telegram" class="tab-content active">
+        <div class="panel">
+          <div class="panel-header">Telegram Options</div>
+          <div class="options-panel">
+            <div class="opt-group">
+              <div class="opt-label">Header Style</div>
+              <div class="opt-row">
+                <button class="opt-btn tg-active" data-tg-header="none" onclick="setOpt('tg-header',this)">No Header</button>
+                <button class="opt-btn" data-tg-header="sports" onclick="setOpt('tg-header',this)">🏆 Sports Day</button>
+                <button class="opt-btn" data-tg-header="live" onclick="setOpt('tg-header',this)">🔴 LIVE NOW</button>
+              </div>
+            </div>
+            <div class="opt-group">
+              <div class="opt-label">Footer</div>
+              <input class="text-input" id="tg-footer" placeholder="📋 Tap the link to copy🌐 Open in Chrome to watch" value="📋 Tap the link to copy🌐 Open in Chrome to watch">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WhatsApp Options -->
+      <div id="tab-whatsapp" class="tab-content">
+        <div class="panel">
+          <div class="panel-header">WhatsApp Options</div>
+          <div class="options-panel">
+            <div class="opt-group">
+              <div class="opt-label">Competition / Title</div>
+              <input class="text-input" id="wa-title" placeholder="e.g. UEFA CHAMPIONS LEAGUE" value="TODAY'S LIVE MATCHES">
+            </div>
+            <div class="opt-group">
+              <div class="opt-label">Intro Message</div>
+              <input class="text-input" id="wa-intro" placeholder="Watch today's matches live for free on Sports803 Live Streams." value="Watch today's matches live for free on Sports803 Live Streams.">
+            </div>
+            <div class="opt-group">
+              <div class="opt-label">VPN Note</div>
+              <div class="opt-row">
+                <button class="opt-btn wa-active" data-wa-vpn="yes" onclick="setOpt('wa-vpn',this)">Include VPN tip</button>
+                <button class="opt-btn" data-wa-vpn="no" onclick="setOpt('wa-vpn',this)">No VPN tip</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Facebook Options -->
+      <div id="tab-facebook" class="tab-content">
+        <div class="panel">
+          <div class="panel-header">Facebook Options</div>
+          <div class="options-panel">
+            <div class="opt-group">
+              <div class="opt-label">Prefix Style</div>
+              <div class="opt-row">
+                <button class="opt-btn fb-active" data-fb-prefix="watch" onclick="setOpt('fb-prefix',this)">Watch … free live stream</button>
+                <button class="opt-btn" data-fb-prefix="live" onclick="setOpt('fb-prefix',this)">🔴 LIVE: …</button>
+                <button class="opt-btn" data-fb-prefix="short" onclick="setOpt('fb-prefix',this)">Short link only</button>
+              </div>
+            </div>
+            <div class="opt-group">
+              <div class="opt-label">Separator</div>
+              <div class="opt-row">
+                <button class="opt-btn fb-active" data-fb-sep="newline" onclick="setOpt('fb-sep',this)">Line break</button>
+                <button class="opt-btn" data-fb-sep="dot" onclick="setOpt('fb-sep',this)">… (dots)</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="panel">
+        <div class="panel-header">Generated Post</div>
+        <div style="padding:14px">
+          <textarea class="output-box" id="output" readonly placeholder="Select matches and click Generate ↓"></textarea>
+          <div class="char-count" id="char-count">0 characters</div>
+          <div class="action-row">
+            <button class="btn-main btn-generate" onclick="generatePost()">⚡ Generate Post</button>
+            <button class="btn-main btn-copy" id="copy-btn" onclick="copyPost()">📋 Copy</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let posts = [];
+let selected = new Set();
+let currentTab = 'telegram';
+let opts = {
+  'tg-header': 'none',
+  'wa-vpn': 'yes',
+  'fb-prefix': 'watch',
+  'fb-sep': 'newline'
+};
+let countdown = 300;
+let countdownTimer;
+
+// ── Sport detection ───────────────────────────────────────────────────────────
+function detectSport(title, url) {
+  const t = (title + url).toLowerCase();
+  if (t.includes('nba') || t.includes('basketball') || t.includes('timberwolves') || t.includes('lakers') || t.includes('celtics')) return 'basketball';
+  if (t.includes('nfl') || t.includes('american football')) return 'american-football';
+  if (t.includes('tennis')) return 'tennis';
+  return 'football';
+}
+
+function sportEmoji(sport) {
+  return { football: '⚽', basketball: '🏀', tennis: '🎾', 'american-football': '🏈' }[sport] || '⚽';
+}
+
+function cleanTitle(raw) {
+  // Remove date prefixes, "live", "free" etc.
+  return raw
+    .replace(/^\d{4}[-/]\d{2}[-/]\d{2}\s*/,'')
+    .replace(/^(watch|live|free|stream)\s*/i,'')
+    .replace(/\s*(live stream|free stream|free live|watch online|full match).*$/i,'')
+    .replace(/-/g, ' ')
+    .replace(/\bx\b/gi, 'vs')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+// ── Fetch posts via RSS / JSON feed ──────────────────────────────────────────
+async function fetchPosts() {
+  document.getElementById('posts-list').innerHTML = '<div class="loading-item"><span class="spinner"></span> Fetching latest posts…</div>';
+
+  const CORS = 'https://api.allorigins.win/get?url=';
+  const feedUrl = encodeURIComponent('https://sports803livestream.blogspot.com/feeds/posts/default?alt=json&max-results=40');
+
+  try {
+    const res = await fetch(CORS + feedUrl);
+    const data = await res.json();
+    const feed = JSON.parse(data.contents);
+    const entries = feed.feed.entry || [];
+
+    posts = entries.map(e => {
+      const title = cleanTitle(e.title.$t);
+      const link = (e.link.find(l => l.rel === 'alternate') || e.link[0]).href;
+      const sport = detectSport(title, link);
+      return { title, link, sport };
+    });
+
+    renderList();
+    document.getElementById('post-count').textContent = posts.length + ' posts loaded';
+    resetCountdown();
+  } catch(err) {
+    // Fallback: try RSS XML
+    try {
+      const rssUrl = encodeURIComponent('https://sports803livestream.blogspot.com/feeds/posts/default?max-results=40');
+      const res2 = await fetch(CORS + rssUrl);
+      const data2 = await res2.json();
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(data2.contents, 'text/xml');
+      const items = xml.querySelectorAll('entry');
+      posts = Array.from(items).map(item => {
+        const title = cleanTitle(item.querySelector('title')?.textContent || '');
+        const link = item.querySelector('link[rel="alternate"]')?.getAttribute('href') || '#';
+        const sport = detectSport(title, link);
+        return { title, link, sport };
+      });
+      renderList();
+      document.getElementById('post-count').textContent = posts.length + ' posts loaded';
+      resetCountdown();
+    } catch(e) {
+      document.getElementById('posts-list').innerHTML =
+        '<div class="loading-item" style="color:var(--red)">⚠️ Could not fetch posts. Check CORS or try again.<br><small>'+e.message+'</small></div>';
+    }
+  }
+}
+
+function renderList() {
+  const el = document.getElementById('posts-list');
+  if (!posts.length) { el.innerHTML = '<div class="loading-item">No posts found.</div>'; return; }
+
+  el.innerHTML = posts.map((p,i) => `
+    <div class="post-item ${selected.has(i)?'selected':''}" onclick="toggleSelect(${i}, event)">
+      <input type="checkbox" ${selected.has(i)?'checked':''} onclick="toggleSelect(${i},event)">
+      <div class="post-meta">
+        <div class="post-title">${p.title}</div>
+        <div class="post-sport">
+          <span class="sport-tag ${p.sport==='basketball'?'basketball':''}">${sportEmoji(p.sport)} ${p.sport}</span>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${p.link}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  updateSelCount();
+}
+
+function toggleSelect(i, e) {
+  e.stopPropagation();
+  if (selected.has(i)) selected.delete(i); else selected.add(i);
+  renderList();
+}
+function selectAll() { posts.forEach((_,i) => selected.add(i)); renderList(); }
+function clearAll() { selected.clear(); renderList(); }
+function selectSport(s) {
+  posts.forEach((p,i) => { if(p.sport === s) selected.add(i); });
+  renderList();
+}
+function updateSelCount() {
+  document.getElementById('sel-count').textContent = selected.size + ' selected';
+}
+
+// ── Options ──────────────────────────────────────────────────────────────────
+function setOpt(key, btn) {
+  opts[key] = btn.dataset[key.replace('-','')];
+  // update active class
+  btn.parentNode.querySelectorAll('.opt-btn').forEach(b => {
+    b.classList.remove('active','tg-active','wa-active','fb-active');
+  });
+  const cls = {'telegram':'tg-active','whatsapp':'wa-active','facebook':'fb-active'}[currentTab] || 'active';
+  btn.classList.add(cls);
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('output').value = '';
+  document.getElementById('char-count').textContent = '0 characters';
+}
+
+// ── Generate ──────────────────────────────────────────────────────────────────
+function generatePost() {
+  const items = Array.from(selected).sort((a,b)=>a-b).map(i => posts[i]);
+  if (!items.length) { alert('Please select at least one match!'); return; }
+
+  let out = '';
+
+  if (currentTab === 'telegram') {
+    const header = opts['tg-header'];
+    if (header === 'sports') {
+      out += '🏆 SPORTS DAY – LIVE MATCHES 🏆\n\n';
+    } else if (header === 'live') {
+      out += '🔴 LIVE NOW – TODAY\'S MATCHES 🔴\n\n';
+    }
+    items.forEach(p => {
+      out += `${sportEmoji(p.sport)} ${p.title}\n${p.link}\n`;
+    });
+    const footer = document.getElementById('tg-footer').value.trim();
+    if (footer) out += '\n' + footer;
+
+  } else if (currentTab === 'whatsapp') {
+    const title = document.getElementById('wa-title').value.trim() || 'TODAY\'S LIVE MATCHES';
+    const intro = document.getElementById('wa-intro').value.trim();
+    const vpn = opts['wa-vpn'] === 'yes';
+    const sport = items[0]?.sport;
+    const em = sportEmoji(sport);
+
+    out += `${em}🔥 ${title} – LIVE MATCHES TODAY 🔥${em}\n`;
+    if (intro) out += `${intro}\n`;
+    if (vpn) out += 'If the video does not play in your country, simply use a VPN and refresh the page.\n';
+    out += '\n⸻\n\n';
+    out += `🏆 Featured Matches\n`;
+    items.forEach(p => {
+      out += `${sportEmoji(p.sport)} ${p.title}\n👉 ${p.link}\n`;
+    });
+
+  } else if (currentTab === 'facebook') {
+    const prefix = opts['fb-prefix'];
+    const sep = opts['fb-sep'];
+    const lines = [];
+    items.forEach(p => {
+      let line = '';
+      if (prefix === 'watch') {
+        line = `Watch ${p.title} free live stream ${p.link}`;
+      } else if (prefix === 'live') {
+        line = `🔴 LIVE: ${p.title}\n${p.link}`;
+      } else {
+        line = `${p.title} ${p.link}`;
+      }
+      lines.push(line);
+    });
+    const joiner = sep === 'dot' ? '\n…\n' : '\n';
+    out = lines.join(joiner);
+  }
+
+  document.getElementById('output').value = out;
+  document.getElementById('char-count').textContent = out.length + ' characters';
+}
+
+// ── Copy ──────────────────────────────────────────────────────────────────────
+function copyPost() {
+  const val = document.getElementById('output').value;
+  if (!val) return;
+  navigator.clipboard.writeText(val).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✅ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ── Countdown ─────────────────────────────────────────────────────────────────
+function resetCountdown() {
+  countdown = 300;
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    countdown--;
+    const m = Math.floor(countdown/60);
+    const s = String(countdown%60).padStart(2,'0');
+    document.getElementById('countdown').textContent = `${m}:${s}`;
+    if (countdown <= 0) { fetchPosts(); }
+  }, 1000);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+fetchPosts();
+</script>
+</body>
+</html>
